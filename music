@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# Initialize variables with default values
+NAME=""
+DOWNLOAD=""
+SEARCH=""
+LINK=""
+
+# Parse command line options
+TEMP=$(getopt -o n:ds:l --long name:,download,search:,link -- "$@")
+
+if [ $? != 0 ]; then
+  echo "Usage: $(basename $0) [-n <name>] [-d] -s <search> [-l]"
+  exit 1
+fi
+
+eval set -- "$TEMP"
+
+# Process options
+while true; do
+  case "$1" in
+    -n | --name )
+      NAME="$2"
+      shift 2
+      ;;
+    -d | --download )
+      DOWNLOAD=true
+      shift
+      ;;
+    -s | --search )
+      SEARCH="$2"
+      shift 2
+      ;;
+    -l | --link )
+      LINK=true
+      shift
+      ;;
+    -- )
+      shift
+      break
+      ;;
+    * )
+      echo "Internal error!"
+      exit 1
+      ;;
+  esac
+done
+if [ -z "$SEARCH" ]; then
+    echo "Use -s to search for a song"
+    exit 1
+fi
+shift $((OPTIND -1))
+
+
+# Declare NAME if not used
+if [ -z "${NAME}" ]; then
+    NAME=$SEARCH
+else
+    echo "name: $NAME"
+fi
+
+
+# Download audio
+dl_song() {
+    cd /home/kyle/Music/YouTube/
+    echo "Downloading Song"
+    echo "link: $link"
+    if [ ! -z "${LINK}" ]; then
+        search_string="$SEARCH"
+    else
+        search_string="ytsearch:$SEARCH"
+    fi
+    echo "search_string: $search_string"
+    echo "name: $NAME"
+    if yt-dlp --extract-audio --audio-format mp3 "$search_string" -o "$NAME"; then
+        mpc update >/dev/null
+        mpc play >/dev/null
+        mpc search filename "$NAME" | mpc insert
+        mpc next
+    else
+        echo "Error Downloading"
+    fi
+}
+
+
+# Find song
+add_to_queue() {
+    if mpc search filename "$SEARCH" >/dev/null; then
+        mpc play >/dev/null
+        mpc search filename "$SEARCH" | mpc insert
+        mpc next
+    else
+        echo "No song found"
+    fi
+}
+
+# Logic
+if [ -n "$DOWNLOAD" ]; then
+    dl_song
+else
+    add_to_queue
+fi

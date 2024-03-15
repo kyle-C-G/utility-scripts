@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Options:
+# -o : On
+# -s : Status
+# -j : Journal
+# -r : Restart
+# -f : Off
+
+# Initialize variables with default values
+ON=""
+STATUS=""
+JOURNAL=""
+RESTART=""
+OFF=""
+
+# Parse command line options
+TEMP=$(getopt -o osjrf --long on,status,journal,restart,off -- "$@")
+
+if [ $? != 0 ]; then
+  echo "Usage: $(basename $0) [-o] [-s] [-j] [-r] [-f]"
+  exit 1
+fi
+
+eval set -- "$TEMP"
+
+# Process options
+while true; do
+  case "$1" in
+    -o | --on )
+      ON=true
+      shift
+      ;;
+    -s | --status )
+      STATUS=true
+      shift
+      ;;
+    -j | --journal )
+      JOURNAL=true
+      shift
+      ;;
+    -r | --restart )
+      RESTART=true
+      shift
+      ;;
+    -f | --off )
+      OFF=true
+      shift
+    ;;
+    -- )
+      shift
+      break
+      ;;
+    * )
+      echo "Internal error"
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+on() {
+    sudo systemctl enable discord_bot.service
+}
+
+status() {
+    sudo systemctl status discord_bot.service
+}
+
+journal() {
+    SERVICE_NAME="discord_bot"
+    START_TIME=$(date -d "-1 minute" +"%Y-%m-%d %H:%M:%S")
+    journalctl --unit="$SERVICE_NAME" --since="$START_TIME"
+}
+
+restart() {
+    sudo systemctl restart discord_bot.service
+}
+
+off() {
+    sudo systemctl disable discord_bot.service --now
+}
+
+if [[ -n "$ON" ]]; then
+    on
+elif [[ -n "$STATUS" ]]; then
+    status
+elif [[ -n "$JOURNAL" ]]; then
+    journal
+elif [[ -n "$RESTART" ]]; then
+    restart
+elif [[ -n "$OFF" ]]; then
+    off
+else
+    echo "No Command Provided"
+fi

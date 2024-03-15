@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+    echo "<video_name> <song_name>"
+    exit 1
+fi
+
+yt-dlp --extract-audio --audio-format mp3 "ytsearch1:$1" -o "/home/kyle/Music/YouTube/$2"
